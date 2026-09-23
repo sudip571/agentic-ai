@@ -1,0 +1,4 @@
+model_list:
+  - model_name: billing-local
+    litellm_params:
+      model: ollama/qwen2.5:3b

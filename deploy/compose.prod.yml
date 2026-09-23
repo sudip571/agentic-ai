@@ -1,0 +1,20 @@
+services:
+  api:
+    image: ${BILLING_IMAGE}
+    container_name: billing-agent-api
+    restart: unless-stopped
+    command: ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    env_file:
+      - .env.production
+    ports:
+      - "8000:8000"
+
+  mcp-server:
+    image: ${BILLING_IMAGE}
+    container_name: billing-agent-mcp
+    restart: unless-stopped
+    command: ["uvicorn", "mcp_server.http_api:app", "--host", "0.0.0.0", "--port", "9000"]
+    env_file:
+      - .env.production
+    ports:
+      - "9000:9000"

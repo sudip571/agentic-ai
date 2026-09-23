@@ -1,0 +1,115 @@
+name: CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/billing-agent
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy-production:
+    runs-on: [self-hosted, linux, x64, billing-prod]
+    needs: build-and-push
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure OIDC login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Load secrets from Azure Key Vault
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            DATABASE_URL=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-database-url" --query value -o tsv)
+            MCP_SERVICE_TOKEN=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-mcp-service-token" --query value -o tsv)
+            AUTH_INTROSPECTION_CLIENT_SECRET=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-introspection-client-secret" --query value -o tsv)
+            cat > .env.production <<EOF
+            ENVIRONMENT=production
+            DATABASE_URL=${DATABASE_URL}
+            MCP_SERVICE_TOKEN=${MCP_SERVICE_TOKEN}
+            AUTH_MODE=oidc_introspection
+            AUTH_INTROSPECTION_URL=${{ vars.AUTH_INTROSPECTION_URL }}
+            AUTH_INTROSPECTION_CLIENT_ID=${{ vars.AUTH_INTROSPECTION_CLIENT_ID }}
+            AUTH_INTROSPECTION_CLIENT_SECRET=${AUTH_INTROSPECTION_CLIENT_SECRET}
+            AUTH_ROLE_CLAIM=${{ vars.AUTH_ROLE_CLAIM }}
+            AUTH_SCOPE_CLAIM=${{ vars.AUTH_SCOPE_CLAIM }}
+            AUTH_READ_ROLE=${{ vars.AUTH_READ_ROLE }}
+            AUTH_WRITE_ROLE=${{ vars.AUTH_WRITE_ROLE }}
+            AUTH_APPROVE_ROLE=${{ vars.AUTH_APPROVE_ROLE }}
+            AUTH_ADMIN_ROLE=${{ vars.AUTH_ADMIN_ROLE }}
+            LLM_MODEL=${{ vars.LLM_MODEL }}
+            LITELLM_BASE_URL=${{ vars.LITELLM_BASE_URL }}
+            MCP_CLIENT_MODE=${{ vars.MCP_CLIENT_MODE }}
+            MCP_SERVER_URL=${{ vars.MCP_SERVER_URL }}
+            EOF
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Deploy API and MCP services
+        env:
+          BILLING_IMAGE: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+        run: |
+          docker compose -f deploy/compose.prod.yml --env-file .env.production pull
+          docker compose -f deploy/compose.prod.yml --env-file .env.production up -d --remove-orphans
+
+      - name: Run DB migrations
+        env:
+          BILLING_IMAGE: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+        run: |
+          docker run --rm --env-file .env.production "$BILLING_IMAGE" alembic upgrade head
+
+      - name: Health check
+        run: |
+          curl --fail --retry 12 --retry-delay 5 http://localhost:8000/health/ready
+          curl --fail --retry 12 --retry-delay 5 http://localhost:9000/health/live

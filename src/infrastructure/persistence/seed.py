@@ -31,6 +31,7 @@ async def seed() -> None:
                 CustomerTable(id="CUST-002", email="cust002@example.com", status="ACTIVE"),
             ]
         )
+        await session.flush()
 
         session.add_all(
             [
@@ -54,6 +55,7 @@ async def seed() -> None:
                 ),
             ]
         )
+        await session.flush()
 
         session.add_all(
             [

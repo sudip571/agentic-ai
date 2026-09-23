@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing Agent Live Demo</title>
+  <style>
+    :root {
+      --bg: #f5f2ea;
+      --panel: #fffaf2;
+      --ink: #1f1a14;
+      --muted: #6f6357;
+      --accent: #0d6f6a;
+      --accent-2: #d47f3b;
+      --ok: #1e7a39;
+      --err: #a22929;
+      --border: #dfd5c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 0%, #f8efe0 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, #e7f3f2 0%, transparent 35%),
+        var(--bg);
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 8px 20px rgba(31, 26, 20, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0.3px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    p { margin: 0 0 10px; color: var(--muted); }
+
+    .row {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea { min-height: 70px; resize: vertical; }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.alt { background: var(--accent-2); }
+
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .ok { color: var(--ok); }
+    .err { color: var(--err); }
+
+    pre {
+      margin: 10px 0 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: #fbf8f3;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 360px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Billing Agent Live Browser Demo</h1>
+      <p>Run end-to-end scenarios against <strong>http://localhost:8000</strong> and inspect raw JSON outputs.</p>
+      <p class="hint">This UI is local only and does not modify service code.</p>
+    </div>
+
+    <div class="card">
+      <h2>1) Chat Request</h2>
+      <div class="row">
+        <div>
+          <label for="apiBase">API Base URL</label>
+          <input id="apiBase" value="http://localhost:8000" />
+        </div>
+        <div>
+          <label for="apiKey">X-API-Key</label>
+          <input id="apiKey" value="dev-write-key" />
+        </div>
+        <div>
+          <label for="actorId">X-Actor-Id</label>
+          <input id="actorId" value="user-1" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="customerId">customer_id</label>
+          <input id="customerId" value="CUST-001" />
+        </div>
+        <div>
+          <label for="requestId">request_id (optional)</label>
+          <input id="requestId" value="demo-req-1" />
+        </div>
+      </div>
+      <label for="message">message</label>
+      <textarea id="message">My bill is $150 but should be $100</textarea>
+      <div class="buttons">
+        <button id="sendChat">Send /api/chat</button>
+        <button class="alt" id="s1">Scenario A: Auto Credit (CUST-003)</button>
+        <button class="alt" id="s2">Scenario B: Approval Needed (CUST-001)</button>
+        <button class="alt" id="s3">Scenario C: No Action (CUST-002)</button>
+        <button class="alt" id="s4">Scenario D: Manual Investigation (CUST-004)</button>
+        <button class="alt" id="s5">Scenario E: Invalid API Key</button>
+      </div>
+      <div id="chatStatus" class="status"></div>
+      <pre id="chatOut">No request sent yet.</pre>
+    </div>
+
+    <div class="card">
+      <h2>2) Approval Decision</h2>
+      <div class="row">
+        <div>
+          <label for="approvalId">approval_id</label>
+          <input id="approvalId" placeholder="Auto-populated from approval-needed response" />
+        </div>
+        <div>
+          <label for="approveKey">X-API-Key</label>
+          <input id="approveKey" value="dev-approve-key" />
+        </div>
+        <div>
+          <label for="approverActor">X-Actor-Id</label>
+          <input id="approverActor" value="approver-1" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="approverId">approver_id</label>
+          <input id="approverId" value="approver-1" />
+        </div>
+        <div>
+          <label for="decision">decision (approve|reject)</label>
+          <input id="decision" value="approve" />
+        </div>
+      </div>
+      <div class="buttons">
+        <button id="sendApproval">Send Approval Decision</button>
+      </div>
+      <div id="approvalStatus" class="status"></div>
+      <pre id="approvalOut">No approval decision sent yet.</pre>
+    </div>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    function pretty(data) {
+      try { return JSON.stringify(data, null, 2); }
+      catch { return String(data); }
+    }
+
+    function setStatus(node, text, ok) {
+      node.textContent = text;
+      node.className = "status " + (ok ? "ok" : "err");
+    }
+
+    async function callChat(customKey) {
+      const base = el("apiBase").value.trim();
+      const apiKey = customKey ?? el("apiKey").value.trim();
+      const actorId = el("actorId").value.trim();
+      const body = {
+        message: el("message").value,
+        customer_id: el("customerId").value.trim(),
+        request_id: el("requestId").value.trim() || null
+      };
+
+      const res = await fetch(base + "/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
+          "X-Actor-Id": actorId
+        },
+        body: JSON.stringify(body)
+      });
+
+      const txt = await res.text();
+      let data;
+      try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
+
+      el("chatOut").textContent = pretty({
+        request: body,
+        status: res.status,
+        response: data,
+        headers: { "x-trace-id": res.headers.get("x-trace-id") }
+      });
+      setStatus(el("chatStatus"), `HTTP ${res.status}`, res.ok);
+
+      if (data && data.approval_request_id) {
+        el("approvalId").value = data.approval_request_id;
+      }
+
+      return { res, data };
+    }
+
+    async function callApproval() {
+      const base = el("apiBase").value.trim();
+      const approvalId = el("approvalId").value.trim();
+      if (!approvalId) {
+        setStatus(el("approvalStatus"), "approval_id is required", false);
+        return;
+      }
+
+      const body = {
+        approver_id: el("approverId").value.trim(),
+        decision: el("decision").value.trim()
+      };
+
+      const res = await fetch(base + "/api/approvals/" + encodeURIComponent(approvalId) + "/decision", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": el("approveKey").value.trim(),
+          "X-Actor-Id": el("approverActor").value.trim()
+        },
+        body: JSON.stringify(body)
+      });
+
+      const txt = await res.text();
+      let data;
+      try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
+
+      el("approvalOut").textContent = pretty({
+        request: body,
+        approval_id: approvalId,
+        status: res.status,
+        response: data,
+        headers: { "x-trace-id": res.headers.get("x-trace-id") }
+      });
+      setStatus(el("approvalStatus"), `HTTP ${res.status}`, res.ok);
+    }
+
+    el("sendChat").addEventListener("click", async () => {
+      try { await callChat(); }
+      catch (e) {
+        setStatus(el("chatStatus"), String(e), false);
+      }
+    });
+
+    el("sendApproval").addEventListener("click", async () => {
+      try { await callApproval(); }
+      catch (e) {
+        setStatus(el("approvalStatus"), String(e), false);
+      }
+    });
+
+    el("s1").addEventListener("click", async () => {
+      el("customerId").value = "CUST-003";
+      el("requestId").value = "demo-auto-credit";
+      el("message").value = "I was overbilled this month. Please check.";
+      await callChat();
+    });
+
+    el("s2").addEventListener("click", async () => {
+      el("customerId").value = "CUST-001";
+      el("requestId").value = "demo-approval";
+      el("message").value = "My invoice looks too high; please correct billing.";
+      await callChat();
+    });
+
+    el("s3").addEventListener("click", async () => {
+      el("customerId").value = "CUST-002";
+      el("requestId").value = "demo-no-action";
+      el("message").value = "Can you verify my bill amount?";
+      await callChat();
+    });
+
+    el("s4").addEventListener("click", async () => {
+      el("customerId").value = "CUST-004";
+      el("requestId").value = "demo-manual-investigation";
+      el("message").value = "I think my bill is wrong and huge.";
+      await callChat();
+    });
+
+    el("s5").addEventListener("click", async () => {
+      el("customerId").value = "CUST-001";
+      el("requestId").value = "demo-invalid-key";
+      el("message").value = "Test invalid key scenario.";
+      await callChat("bad-key");
+    });
+  </script>
+</body>
+</html>

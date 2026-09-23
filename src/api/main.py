@@ -12,6 +12,7 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from src.api.dependencies import get_database
 from src.api.routes.chat import router as chat_router
+from src.api.routes.demo import router as demo_router
 from src.api.routes.health import router as health_router
 from src.shared.configuration import get_settings
 from src.shared.errors import (
@@ -51,6 +52,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Billing Agent", version="0.1.0", lifespan=lifespan)
 app.include_router(health_router)
 app.include_router(chat_router)
+app.include_router(demo_router)
 
 
 @app.middleware("http")
@@ -91,7 +93,17 @@ async def apply_security_and_request_limits(
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Cache-Control"] = "no-store"
-    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    if request.url.path.startswith("/internal/demo"):
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "connect-src 'self'; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "frame-ancestors 'none'"
+        )
+    else:
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
     response.headers["X-Trace-Id"] = trace_id
     return response
 

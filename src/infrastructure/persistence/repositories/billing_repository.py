@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,13 +41,13 @@ class BillingRepository:
         row = await self.session.get(CustomerTable, customer_id)
         if not row:
             return None
-        return Customer(id=row.id, email=row.email, status=CustomerStatus(row.status))
+        return Customer(id=row.id, email=row.email, status=CustomerStatus(row.status.upper()))
 
     async def get_contract_for_period(self, customer_id: str, at: datetime) -> Contract | None:
         query = select(ContractTable).where(
             and_(
                 ContractTable.customer_id == customer_id,
-                ContractTable.status == ContractStatus.ACTIVE.value,
+                func.upper(ContractTable.status) == ContractStatus.ACTIVE.value,
                 ContractTable.effective_from <= at,
             )
         )
@@ -64,7 +64,7 @@ class BillingRepository:
             ),
             effective_from=row.effective_from,
             effective_to=row.effective_to,
-            status=ContractStatus(row.status),
+            status=ContractStatus(row.status.upper()),
         )
 
     async def get_latest_finalized_invoice(self, customer_id: str) -> Invoice | None:
@@ -73,7 +73,7 @@ class BillingRepository:
             .where(
                 and_(
                     InvoiceTable.customer_id == customer_id,
-                    InvoiceTable.status == InvoiceStatus.FINALIZED.value,
+                    func.upper(InvoiceTable.status) == InvoiceStatus.FINALIZED.value,
                 )
             )
             .order_by(InvoiceTable.issued_at.desc())
@@ -88,7 +88,7 @@ class BillingRepository:
             billing_period=row.billing_period,
             issued_at=row.issued_at,
             total=Money(amount=row.total_amount, currency=row.total_currency),
-            status=InvoiceStatus(row.status),
+            status=InvoiceStatus(row.status.upper()),
         )
 
     async def ensure_idempotency(self, key: str, request_id: str) -> bool:

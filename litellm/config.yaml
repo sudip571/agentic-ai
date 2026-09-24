@@ -2,3 +2,80 @@ model_list:
   - model_name: billing-local
     litellm_params:
       model: ollama/qwen2.5:3b
+      api_base: os.environ/OLLAMA_API_BASE
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+
+  - model_name: billing-openai
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: billing-anthropic
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-latest
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # One logical model group spread across providers for load balancing/failover.
+  - model_name: billing-balanced
+    litellm_params:
+      model: ollama/qwen2.5:3b
+      api_base: os.environ/OLLAMA_API_BASE
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+  - model_name: billing-balanced
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: billing-balanced
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-latest
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+litellm_settings:
+  json_logs: true
+  request_correlation_in_logs: true
+  redact_user_api_key_info: true
+  turn_off_message_logging: true
+  max_internal_user_budget: 100
+  internal_user_budget_duration: "30d"
+  default_key_generate_params:
+    max_budget: 100
+    budget_duration: "30d"
+    tpm_limit: 60000
+    rpm_limit: 300
+    models:
+      - billing-local
+      - billing-openai
+      - billing-anthropic
+      - billing-balanced
+  upperbound_key_generate_params:
+    max_budget: 1000
+    budget_duration: "90d"
+    tpm_limit: 120000
+    rpm_limit: 1000
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/LITELLM_DATABASE_URL
+  ui_access_mode: admin_only
+  store_model_in_db: true
+  fail_closed_budget_enforcement: true
+  disable_spend_logs: false
+  disable_spend_updates: false
+  allow_requests_on_db_unavailable: false
+  enforce_fallback_model_access: true
+  enforce_fallback_budget: true
+  token_rate_limit_type: total
+  maximum_spend_logs_retention_period: "30d"
+  maximum_spend_logs_retention_interval: "1d"
+  disable_env_credential_login: true
+
+router_settings:
+  routing_strategy: least-busy
+  num_retries: 2
+  allowed_fails: 3
+  cooldown_time: 30
+  timeout: 30
+  fallbacks:
+    - {"billing-balanced": ["billing-local"]}

@@ -73,7 +73,7 @@ For OIDC introspection mode configure:
 1. Start dependencies:
 
 ```bash
-docker compose up -d postgres litellm
+docker compose up -d postgres redis litellm
 ```
 
 2. Seed deterministic test data:
@@ -148,6 +148,48 @@ ollama pull qwen2.5:3b
 ## Running LiteLLM
 
 LiteLLM is configured in litellm/config.yaml and exposed on port 4000 via Docker Compose.
+
+This repo now includes a production-ready LiteLLM gateway setup with:
+
+- Admin UI at /ui (db-backed auth)
+- centralized request logging (JSON + correlation ids)
+- DB-backed spend/cost tracking
+- load-balanced model group (`billing-balanced`) across OpenAI, Anthropic, and Ollama
+- user/team/key budget defaults via LiteLLM key management settings
+
+Model aliases configured:
+
+- `billing-local` -> `ollama/qwen2.5:3b`
+- `billing-openai` -> `openai/gpt-4o-mini`
+- `billing-anthropic` -> `anthropic/claude-3-5-haiku-latest`
+- `billing-balanced` -> load-balanced across all providers above
+
+Important environment variables (see `.env.example`):
+
+- `LITELLM_MASTER_KEY`
+- `LITELLM_API_KEY`
+- `LITELLM_DATABASE_URL`
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `OLLAMA_API_BASE`
+- `UI_USERNAME`, `UI_PASSWORD`
+
+Dashboard login:
+
+- URL: `http://localhost:4000/ui/login/`
+- Bootstrap credentials come from `UI_USERNAME` and `UI_PASSWORD`.
+
+Production hardening for Admin UI:
+
+1. Log in with bootstrap credentials.
+2. Create a dedicated proxy admin user under Internal Users.
+3. Verify that new user can log in.
+4. Keep `general_settings.disable_env_credential_login: true` in `litellm/config.yaml`.
+5. Restart LiteLLM.
+
+This disables shared environment-credential login.
+
+For local Docker on Windows/macOS, set `OLLAMA_API_BASE=http://host.docker.internal:11434`.
 
 ## Running MCP Server
 

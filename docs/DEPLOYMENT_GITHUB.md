@@ -18,7 +18,7 @@ Why this is the default recommendation:
 3. Production job requires environment approval and runs on self-hosted runner.
 4. Runner federates identity to Azure using OIDC.
 5. Secrets are read from Azure Key Vault at deployment time.
-6. Docker Compose updates API and MCP services.
+6. Docker Compose updates API, MCP, LiteLLM, and Redis services.
 7. Migration step runs alembic upgrade head.
 8. Health checks verify rollout.
 
@@ -49,7 +49,8 @@ Environment variables:
 - AUTH_APPROVE_ROLE
 - AUTH_ADMIN_ROLE
 - LLM_MODEL
-- LITELLM_BASE_URL
+- OLLAMA_API_BASE
+- UI_USERNAME
 - MCP_CLIENT_MODE
 - MCP_SERVER_URL
 
@@ -64,6 +65,12 @@ Environment secrets:
 - billing-database-url
 - billing-mcp-service-token
 - billing-introspection-client-secret
+- billing-litellm-database-url
+- billing-litellm-master-key
+- billing-litellm-api-key
+- billing-openai-api-key
+- billing-anthropic-api-key
+- billing-litellm-ui-password
 
 ## Triggering Deployment
 

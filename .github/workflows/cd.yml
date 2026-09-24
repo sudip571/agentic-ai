@@ -73,6 +73,12 @@ jobs:
             DATABASE_URL=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-database-url" --query value -o tsv)
             MCP_SERVICE_TOKEN=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-mcp-service-token" --query value -o tsv)
             AUTH_INTROSPECTION_CLIENT_SECRET=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-introspection-client-secret" --query value -o tsv)
+            LITELLM_DATABASE_URL=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-litellm-database-url" --query value -o tsv)
+            LITELLM_MASTER_KEY=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-litellm-master-key" --query value -o tsv)
+            LITELLM_API_KEY=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-litellm-api-key" --query value -o tsv)
+            OPENAI_API_KEY=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-openai-api-key" --query value -o tsv)
+            ANTHROPIC_API_KEY=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-anthropic-api-key" --query value -o tsv)
+            UI_PASSWORD=$(az keyvault secret show --vault-name "${{ vars.AZURE_KEY_VAULT_NAME }}" --name "billing-litellm-ui-password" --query value -o tsv)
             cat > .env.production <<EOF
             ENVIRONMENT=production
             DATABASE_URL=${DATABASE_URL}
@@ -88,7 +94,15 @@ jobs:
             AUTH_APPROVE_ROLE=${{ vars.AUTH_APPROVE_ROLE }}
             AUTH_ADMIN_ROLE=${{ vars.AUTH_ADMIN_ROLE }}
             LLM_MODEL=${{ vars.LLM_MODEL }}
-            LITELLM_BASE_URL=${{ vars.LITELLM_BASE_URL }}
+            LITELLM_BASE_URL=http://litellm:4000
+            LITELLM_API_KEY=${LITELLM_API_KEY}
+            LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+            LITELLM_DATABASE_URL=${LITELLM_DATABASE_URL}
+            OPENAI_API_KEY=${OPENAI_API_KEY}
+            ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+            OLLAMA_API_BASE=${{ vars.OLLAMA_API_BASE }}
+            UI_USERNAME=${{ vars.UI_USERNAME }}
+            UI_PASSWORD=${UI_PASSWORD}
             MCP_CLIENT_MODE=${{ vars.MCP_CLIENT_MODE }}
             MCP_SERVER_URL=${{ vars.MCP_SERVER_URL }}
             EOF

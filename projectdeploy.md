@@ -7,6 +7,8 @@ If you follow it step-by-step, you can deploy:
 
 - API service
 - MCP HTTP service
+- LiteLLM gateway service
+- Redis service (for distributed limits/counters)
 - Database migration job
 - Health-verified rollout
 
@@ -28,7 +30,7 @@ From `.github/workflows/cd.yml`, deployment works like this:
 4. Authenticate to Azure using GitHub OIDC.
 5. Pull secrets from Azure Key Vault.
 6. Generate `.env.production` on runner.
-7. Deploy API + MCP containers using `deploy/compose.prod.yml`.
+7. Deploy API + MCP + LiteLLM + Redis containers using `deploy/compose.prod.yml`.
 8. Run `alembic upgrade head` in a one-shot container.
 9. Verify health endpoints.
 
@@ -36,7 +38,7 @@ From `.github/workflows/cd.yml`, deployment works like this:
 
 ## 3. What Gets Deployed
 
-The deployed runtime contains two services from same image:
+The deployed runtime contains four services:
 
 1. API container
 - Command: `uvicorn src.api.main:app --host 0.0.0.0 --port 8000`
@@ -45,6 +47,13 @@ The deployed runtime contains two services from same image:
 2. MCP container
 - Command: `uvicorn mcp_server.http_api:app --host 0.0.0.0 --port 9000`
 - Port: `9000`
+
+3. LiteLLM container
+- Command: `--config /app/config.yaml --port 4000`
+- Port: `4000` (Admin UI + proxy)
+
+4. Redis container
+- Used by LiteLLM for shared counters/caching needed by budgets and rate limiting at scale
 
 Definition file: `deploy/compose.prod.yml`
 
@@ -99,7 +108,8 @@ Add environment variables (GitHub Environment -> Variables):
 - `AUTH_APPROVE_ROLE`
 - `AUTH_ADMIN_ROLE`
 - `LLM_MODEL`
-- `LITELLM_BASE_URL`
+- `OLLAMA_API_BASE`
+- `UI_USERNAME`
 - `MCP_CLIENT_MODE`
 - `MCP_SERVER_URL`
 
@@ -126,6 +136,12 @@ Key Vault secrets expected by workflow:
 - `billing-database-url`
 - `billing-mcp-service-token`
 - `billing-introspection-client-secret`
+- `billing-litellm-database-url`
+- `billing-litellm-master-key`
+- `billing-litellm-api-key`
+- `billing-openai-api-key`
+- `billing-anthropic-api-key`
+- `billing-litellm-ui-password`
 
 These are loaded at deploy time and written into `.env.production` on runner.
 

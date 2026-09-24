@@ -21,9 +21,10 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./billing_agent.db"
     database_echo: bool = False
 
-    llm_model: str = "ollama/qwen2.5:3b"
+    llm_model: str = "billing-local"
     llm_timeout_seconds: float = 10.0
     litellm_base_url: str = "http://localhost:4000"
+    litellm_api_key: str | None = None
 
     mcp_server_url: str = "http://localhost:9000/mcp"
     mcp_timeout_seconds: float = 5.0

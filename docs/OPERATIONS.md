@@ -3,7 +3,7 @@
 ## Local Startup
 
 1. uv sync --extra dev
-2. docker compose up -d postgres litellm
+2. docker compose up -d postgres redis litellm
 3. uv run alembic upgrade head
 4. uv run python -m src.infrastructure.persistence.seed
 5. uv run uvicorn src.api.main:app --reload
@@ -13,6 +13,12 @@
 - GET /health/live
 - GET /health/ready
 - GET /metrics
+
+## LiteLLM Dashboard
+
+- URL: `http://localhost:4000/ui/login/`
+- Bootstrap login uses `UI_USERNAME` and `UI_PASSWORD`.
+- For production, create a dedicated proxy admin account and keep `disable_env_credential_login: true` in `litellm/config.yaml`.
 
 ## Enterprise Identity Mode
 

@@ -96,11 +96,39 @@ $env:UV_NATIVE_TLS='true'
 uv sync --extra dev
 ```
 
-### Step 3: Start runtime dependencies (Postgres + LiteLLM)
+### Step 3: Start runtime dependencies (Postgres + Redis + LiteLLM)
 
 ```powershell
-docker compose up -d postgres litellm
+docker compose up -d postgres redis litellm
 ```
+
+### Step 3.1: LiteLLM dashboard prerequisites in `.env`
+
+Set these values for local dashboard login and proxy auth:
+
+```env
+LLM_MODEL=billing-local
+LITELLM_BASE_URL=http://localhost:4000
+LITELLM_API_KEY=sk-litellm-service-dev
+LITELLM_MASTER_KEY=sk-local-master-1234567890
+LITELLM_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/litellm_proxy
+UI_USERNAME=admin
+UI_PASSWORD=change-me
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+OLLAMA_API_BASE=http://host.docker.internal:11434
+```
+
+Open dashboard:
+
+```text
+http://localhost:4000/ui/login/
+```
+
+Use:
+
+- Username: `admin`
+- Password: `change-me`
 
 ### Step 4: Run database migration
 
@@ -150,6 +178,22 @@ In `.env` keep:
 These keys are used in request headers. Example write key header:
 
 - `X-API-Key: dev-write-key`
+
+### LiteLLM dashboard hardening (required for production)
+
+Environment-credential login is only for bootstrap.
+
+1. Sign in once using `UI_USERNAME`/`UI_PASSWORD`.
+2. Go to Internal Users and create a real proxy admin user with its own password.
+3. Confirm that new user can sign in.
+4. Keep `general_settings.disable_env_credential_login: true` in `litellm/config.yaml`.
+5. Restart LiteLLM:
+
+```powershell
+docker compose up -d litellm
+```
+
+Result: dashboard login no longer accepts shared env credentials.
 
 ### MCP HTTP mode (if using separate MCP process)
 

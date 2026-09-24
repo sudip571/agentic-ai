@@ -56,6 +56,7 @@ class LLMClient:
             response = await acompletion(
                 model=self.settings.llm_model,
                 base_url=self.settings.litellm_base_url,
+                api_key=self.settings.litellm_api_key,
                 timeout=self.settings.llm_timeout_seconds,
                 messages=litellm_messages,
             )

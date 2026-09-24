@@ -15,11 +15,34 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     ports:
       - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_DATABASE_URL: ${LITELLM_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/litellm_proxy}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-sk-litellm-service-dev}
+      UI_USERNAME: ${UI_USERNAME:-admin}
+      UI_PASSWORD: ${UI_PASSWORD:-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./litellm/config.yaml:/app/config.yaml:ro
 
@@ -31,11 +54,15 @@ services:
       ENVIRONMENT: production
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/billing_agent
       LITELLM_BASE_URL: http://litellm:4000
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-sk-litellm-service-dev}
+      LLM_MODEL: ${LLM_MODEL:-billing-local}
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
+      litellm:
+        condition: service_started
 
 volumes:
   pgdata:

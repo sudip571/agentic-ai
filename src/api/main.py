@@ -55,6 +55,31 @@ app.include_router(chat_router)
 app.include_router(demo_router)
 
 
+def _content_security_policy(path: str) -> str:
+    if path.startswith("/internal/demo"):
+        return (
+            "default-src 'self'; "
+            "connect-src 'self'; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "frame-ancestors 'none'"
+        )
+
+    # Swagger/ReDoc pages require inline scripts/styles and CDN-hosted assets.
+    if path in {"/docs", "/docs/oauth2-redirect", "/redoc"}:
+        return (
+            "default-src 'self'; "
+            "connect-src 'self'; "
+            "img-src 'self' data: https:; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "frame-ancestors 'none'"
+        )
+
+    return "default-src 'none'; frame-ancestors 'none'"
+
+
 @app.middleware("http")
 async def apply_security_and_request_limits(
     request: Request,
@@ -93,17 +118,7 @@ async def apply_security_and_request_limits(
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Cache-Control"] = "no-store"
-    if request.url.path.startswith("/internal/demo"):
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "connect-src 'self'; "
-            "img-src 'self' data:; "
-            "style-src 'self' 'unsafe-inline'; "
-            "script-src 'self' 'unsafe-inline'; "
-            "frame-ancestors 'none'"
-        )
-    else:
-        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    response.headers["Content-Security-Policy"] = _content_security_policy(request.url.path)
     response.headers["X-Trace-Id"] = trace_id
     return response
 

@@ -136,6 +136,16 @@ Use:
 uv run alembic upgrade head
 ```
 
+If this fails with async-driver errors such as `MissingGreenlet`, use this local fallback:
+
+1. Start API once to let development startup create schema:
+
+```powershell
+uv run uvicorn src.api.main:app --reload
+```
+
+2. Stop API (`Ctrl+C`) and then continue with seed step.
+
 ### Step 5: Seed test data
 
 ```powershell
@@ -155,6 +165,81 @@ curl http://localhost:8000/health/live
 curl http://localhost:8000/health/ready
 curl http://localhost:8000/metrics
 ```
+
+### Step 8: Verify Swagger UI is available
+
+Open these URLs in browser:
+
+```text
+http://localhost:8000/docs
+http://localhost:8000/redoc
+http://localhost:8000/openapi.json
+```
+
+Expected result:
+
+- `/docs` and `/redoc` render normally.
+- `/openapi.json` returns OpenAPI JSON.
+- If these fail to render, confirm API is running and restart it.
+
+### Step 9: Test end-to-end from Swagger (`/docs`)
+
+1. Open `POST /api/chat` and click **Try it out**.
+2. Add request headers in the Swagger form:
+- `X-API-Key: dev-write-key`
+- `X-Actor-Id: user-1`
+3. Use this body shape:
+
+```json
+{
+  "message": "My bill is $150 but should be $100",
+  "customer_id": "CUST-001",
+  "request_id": "swagger-approval-1"
+}
+```
+
+4. Execute and inspect response:
+- If approval is required, save `approval_request_id`.
+- Keep `request_id` unique for each run to avoid duplicate-request conflicts.
+
+5. Open `POST /api/approvals/{approval_id}/decision` and click **Try it out**.
+6. Set path and headers:
+- `approval_id`: value from chat response
+- `X-API-Key: dev-approve-key`
+- `X-Actor-Id: approver-1`
+7. Use body:
+
+```json
+{
+  "approver_id": "approver-1",
+  "decision": "approve"
+}
+```
+
+8. Execute and verify completion response.
+
+### Step 10: Suggested Swagger scenario matrix
+
+Run these as separate `POST /api/chat` requests with different `request_id` values:
+
+1. Approval path
+- `customer_id: CUST-001`
+- Example `request_id`: `swagger-approval-<timestamp>`
+
+2. No-action path
+- `customer_id: CUST-002`
+- Example `request_id`: `swagger-no-action-<timestamp>`
+
+3. Auto-credit path
+- `customer_id: CUST-003`
+- Example `request_id`: `swagger-auto-credit-<timestamp>`
+
+4. Manual-investigation path
+- `customer_id: CUST-004`
+- Example `request_id`: `swagger-manual-<timestamp>`
+
+5. Auth failure path
+- Use invalid `X-API-Key` and expect authorization failure.
 
 If these endpoints respond successfully, your local setup is running correctly.
 

@@ -96,6 +96,14 @@ curl http://localhost:8000/health/live
 curl http://localhost:8000/health/ready
 ```
 
+5. Swagger/OpenAPI:
+
+```text
+http://localhost:8000/docs
+http://localhost:8000/redoc
+http://localhost:8000/openapi.json
+```
+
 ## Running Tests
 
 ```bash
@@ -233,6 +241,22 @@ curl -X POST http://localhost:8000/api/approvals/<approval_id>/decision \
   -H "X-Actor-Id: approver-1" \
   -d '{"approver_id":"approver-1","decision":"approve"}'
 ```
+
+## Testing from Swagger
+
+1. Open `http://localhost:8000/docs`.
+2. Test `POST /api/chat` with headers:
+- `X-API-Key: dev-write-key`
+- `X-Actor-Id: user-1`
+3. Use a unique `request_id` for each test run.
+4. If response contains `approval_request_id`, test `POST /api/approvals/{approval_id}/decision` with:
+- `X-API-Key: dev-approve-key`
+- `X-Actor-Id: approver-1`
+5. Use test customer IDs to cover major paths:
+- `CUST-001` approval
+- `CUST-002` no action
+- `CUST-003` auto credit
+- `CUST-004` manual investigation
 
 ## Troubleshooting
 

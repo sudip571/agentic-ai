@@ -2,17 +2,35 @@
 
 ## Local Startup
 
-1. uv sync --extra dev
-2. docker compose up -d postgres redis litellm
-3. uv run alembic upgrade head
-4. uv run python -m src.infrastructure.persistence.seed
-5. uv run uvicorn src.api.main:app --reload
+1. Copy `.env.example` to `.env`.
+2. uv sync --extra dev
+3. docker compose up -d postgres redis litellm
+4. uv run alembic upgrade head
+5. uv run python -m src.infrastructure.persistence.seed
+6. uv run uvicorn src.api.main:app --reload
 
 ## Health
 
 - GET /health/live
 - GET /health/ready
 - GET /metrics
+
+## Swagger / OpenAPI
+
+- Docs UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+- OpenAPI spec: `http://localhost:8000/openapi.json`
+
+Basic Swagger test flow:
+
+1. Execute `POST /api/chat` with headers `X-API-Key` and `X-Actor-Id`.
+2. Use a unique `request_id` on every run.
+3. If response includes `approval_request_id`, execute `POST /api/approvals/{approval_id}/decision`.
+4. Validate expected scenarios using seeded customers:
+	- `CUST-001` approval
+	- `CUST-002` no action
+	- `CUST-003` auto credit
+	- `CUST-004` manual investigation
 
 ## LiteLLM Dashboard
 

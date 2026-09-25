@@ -9,9 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.interfaces.auth import Permission
 from src.application.services.billing_service import BillingService
+from src.application.services.flightdeck_service import FlightdeckService
 from src.infrastructure.email.service import EmailService
+from src.infrastructure.llm.flightdeck_client import FlightdeckLLMClient
 from src.infrastructure.llm.client import LLMClient
 from src.infrastructure.mcp.client import BillingMCPClient
+from src.infrastructure.mcp.flightdeck_client import FlightdeckMCPClient
 from src.infrastructure.persistence.database import Database
 from src.infrastructure.security.identity_provider import OIDCIntrospectionIdentityProvider
 from src.shared.configuration import Settings, get_settings
@@ -102,6 +105,15 @@ def get_billing_service() -> BillingService:
 
 def get_llm_client() -> LLMClient:
     return LLMClient(get_settings())
+
+
+def get_flightdeck_llm_client() -> FlightdeckLLMClient:
+    return FlightdeckLLMClient(get_settings())
+
+
+def get_flightdeck_service() -> FlightdeckService:
+    settings = get_settings()
+    return FlightdeckService(settings, mcp_client=FlightdeckMCPClient(settings))
 
 
 def get_email_service() -> EmailService:

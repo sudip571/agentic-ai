@@ -13,6 +13,7 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 from src.api.dependencies import get_database
 from src.api.routes.chat import router as chat_router
 from src.api.routes.demo import router as demo_router
+from src.api.routes.flightdeck import router as flightdeck_router
 from src.api.routes.health import router as health_router
 from src.shared.configuration import get_settings
 from src.shared.errors import (
@@ -52,6 +53,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Billing Agent", version="0.1.0", lifespan=lifespan)
 app.include_router(health_router)
 app.include_router(chat_router)
+app.include_router(flightdeck_router)
 app.include_router(demo_router)
 
 
@@ -92,7 +94,7 @@ async def apply_security_and_request_limits(
 
     start = perf_counter()
     status_code = 500
-    if request.method == "POST" and request.url.path == "/api/chat":
+    if request.method == "POST" and request.url.path in {"/api/chat", "/api/flightdeck/chat"}:
         content_length = request.headers.get("content-length")
         if content_length is not None and int(content_length) > settings.max_request_body_bytes:
             response: Response = JSONResponse(

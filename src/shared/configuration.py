@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 10.0
     litellm_base_url: str = "http://localhost:4000"
     litellm_api_key: str | None = None
+    flightdeck_ui_base_url: str = "https://flightdeck.example.com"
 
     mcp_server_url: str = "http://localhost:9000/mcp"
     mcp_timeout_seconds: float = 5.0

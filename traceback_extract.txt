@@ -1,0 +1,474 @@
+FULL_FAILING_TRACEBACK_START
+[Output too large (40KB). Full output saved to: c:\Users\sudip.ranabhat\AppData\Roaming\Code\copilot-terminal-output\copilot-terminal-output-b7eecf1c-0b85-44e8-954a-9fb07d186e06.txt]
+[Use readFile or grep to examine the full output.]
+
+PS C:\Projects\Test and Experiemnt\BillingAgentAppTest> 
+execution_options = immutabledict({})
+
+    def _execute_on_scalar(
+        self,
+        connection: Connection,
+        distilled_params: _CoreMultiExecuteParams,
+        execution_options: CoreExecuteOptionsParameter,
+    ) -> Any:
+        """an additional hook for subclasses to provide a different
+        implementation for connection.scalar() vs. connection.execute().
+    
+        .. versionadded:: 2.0
+    
+        """
+>       return s
+
+[... middle of output truncated ...]
+
+     "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x000002137C1ABED0>
+cursor = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x000002137C153940>
+statement = 'SELECT pg_catalog.pg_class.relname \nFROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace...RCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR'
+parameters = ('customers', 'r', 'p', 'f', 'v', 'm', ...)
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x000002137C091550>
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:952: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x000002137C153940>
+operation = 'SELECT pg_catalog.pg_class.relname \nFROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace...RCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR'
+parameters = ('customers', 'r', 'p', 'f', 'v', 'm', ...)
+
+    def execute(self, operation, parameters=None):
+>       self._adapt_connection.await_(
+            self._prepare_and_execute(operation, parameters)
+        )
+
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:585: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+awaitable = <coroutine object AsyncAdapt_asyncpg_cursor._prepare_and_execute at 0x000002137C16BCA0>
+
+    def await_only(awaitable: Awaitable[_T]) -> _T:
+        """Awaits an async function in a sync method.
+    
+        The sync method must be inside a :func:`greenlet_spawn` context.
+        :func:`await_only` calls cannot be nested.
+    
+        :param awaitable: The coroutine to call.
+    
+        """
+        # this is called in the context greenlet while running fn
+        current = getcurrent()
+        if not getattr(current, "__sqlalchemy_greenlet_provider__", False):
+            _safe_cancel_awaitable(awaitable)
+    
+            raise exc.MissingGreenlet(
+                "greenlet_spawn has not been called; can't call await_only() "
+                "here. Was IO attempted in an unexpected place?"
+            )
+    
+        # returns the control to the driver greenlet passing it
+        # a coroutine to run. Once the awaitable is done, the driver greenlet
+        # switches back to this greenlet with the result of awaitable that is
+        # then returned to the caller (or raised as error)
+>       return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+fn = <bound method MetaData.create_all of MetaData()>, _require_await = False
+args = (<sqlalchemy.engine.base.Connection object at 0x000002137C445C10>,)
+kwargs = {}
+
+    async def greenlet_spawn(
+        fn: Callable[..., _T],
+        *args: Any,
+        _require_await: bool = False,
+        **kwargs: Any,
+    ) -> _T:
+        """Runs a sync function ``fn`` in a new greenlet.
+    
+        The sync function can then use :func:`await_only` to wait for async
+        functions.
+    
+        :param fn: The sync callable to call.
+        :param \\*args: Positional arguments to pass to the ``fn`` callable.
+        :param \\*\\*kwargs: Keyword arguments to pass to the ``fn`` callable.
+        """
+    
+        result: Any
+        context = _AsyncIoGreenlet(fn, getcurrent())
+        # runs the function synchronously in gl greenlet. If the execution
+        # is interrupted by await_only, context is not dead and result is a
+        # coroutine to wait. If the context is dead the function has
+        # returned, and its result can be returned.
+        switch_occurred = False
+        result = context.switch(*args, **kwargs)
+        while not context.dead:
+            switch_occurred = True
+            try:
+                # wait for a coroutine from await_only and then return its
+                # result back to it.
+>               value = await result
+                        ^^^^^^^^^^^^
+
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x000002137C153940>
+operation = 'SELECT pg_catalog.pg_class.relname \nFROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace...RCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR'
+parameters = ('customers', 'r', 'p', 'f', 'v', 'm', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+>               await adapt_connection._start_transaction()
+
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:520: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x000002137C1ADF40>>
+
+    async def _start_transaction(self):
+        if self.isolation_level == "autocommit":
+            return
+    
+        try:
+            self._transaction = self._connection.transaction(
+                isolation=self.isolation_level,
+                readonly=self.readonly,
+                deferrable=self.deferrable,
+            )
+            await self._transaction.start()
+        except Exception as error:
+>           self._handle_exception(error)
+
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:850: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x000002137C1ADF40>>
+error = AttributeError("'NoneType' object has no attribute 'send'")
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+                    raise translated_error from error
+            else:
+>               raise error
+
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:799: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x000002137C1ADF40>>
+
+    async def _start_transaction(self):
+        if self.isolation_level == "autocommit":
+            return
+    
+        try:
+            self._transaction = self._connection.transaction(
+                isolation=self.isolation_level,
+                readonly=self.readonly,
+                deferrable=self.deferrable,
+            )
+>           await self._transaction.start()
+
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:848: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <asyncpg.Transaction state:failed 0x2137c116ff0>
+
+    @connresource.guarded
+    async def start(self):
+        """Enter the transaction or savepoint block."""
+        self.__check_state_base('start')
+        if self._state is TransactionState.STARTED:
+            raise apg_errors.InterfaceError(
+                'cannot start; the transaction is already started')
+    
+        con = self._connection
+    
+        if con._top_xact is None:
+            if con._protocol.is_in_transaction():
+                raise apg_errors.InterfaceError(
+                    'cannot use Connection.transaction() in '
+                    'a manually started transaction')
+            con._top_xact = self
+        else:
+            # Nested transaction block
+            if self._isolation:
+                top_xact_isolation = con._top_xact._isolation
+                if top_xact_isolation is None:
+                    top_xact_isolation = ISOLATION_LEVELS_BY_VALUE[
+                        await self._connection.fetchval(
+                            'SHOW transaction_isolation;')]
+                if self._isolation != top_xact_isolation:
+                    raise apg_errors.InterfaceError(
+                        'nested transaction has a different isolation level: '
+                        'current {!r} != outer {!r}'.format(
+                            self._isolation, top_xact_isolation))
+            self._nested = True
+    
+        if self._nested:
+            self._id = con._get_unique_id('savepoint')
+            query = 'SAVEPOINT {};'.format(self._id)
+        else:
+            query = 'BEGIN'
+            if self._isolation == 'read_committed':
+                query += ' ISOLATION LEVEL READ COMMITTED'
+            elif self._isolation == 'read_uncommitted':
+                query += ' ISOLATION LEVEL READ UNCOMMITTED'
+            elif self._isolation == 'repeatable_read':
+                query += ' ISOLATION LEVEL REPEATABLE READ'
+            elif self._isolation == 'serializable':
+                query += ' ISOLATION LEVEL SERIALIZABLE'
+            if self._readonly:
+                query += ' READ ONLY'
+            if self._deferrable:
+                query += ' DEFERRABLE'
+            query += ';'
+    
+        try:
+>           await self._connection.execute(query)
+
+.venv\Lib\site-packages\asyncpg\transaction.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <asyncpg.connection.Connection object at 0x000002137C1ADF40>
+query = 'BEGIN;', timeout = None, args = ()
+
+    async def execute(
+        self,
+        query: str,
+        *args,
+        timeout: typing.Optional[float]=None,
+    ) -> str:
+        """Execute an SQL command (or commands).
+    
+        This method can execute many SQL commands at once, when no arguments
+        are provided.
+    
+        Example:
+    
+        .. code-block:: pycon
+    
+            >>> await con.execute('''
+            ...     CREATE TABLE mytab (a int);
+            ...     INSERT INTO mytab (a) VALUES (100), (200), (300);
+            ... ''')
+            INSERT 0 3
+    
+            >>> await con.execute('''
+            ...     INSERT INTO mytab (a) VALUES ($1), ($2)
+            ... ''', 10, 20)
+            INSERT 0 2
+    
+        :param args: Query arguments.
+        :param float timeout: Optional timeout value in seconds.
+        :return str: Status of the last SQL command.
+    
+        .. versionchanged:: 0.5.4
+           Made it possible to pass query arguments.
+        """
+        self._check_open()
+    
+        if not args:
+            if self._query_loggers:
+                with self._time_and_log(query, args, timeout):
+                    result = await self._protocol.query(query, timeout)
+            else:
+>               result = await self._protocol.query(query, timeout)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv\Lib\site-packages\asyncpg\connection.py:354: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+
+asyncpg/protocol/protocol.pyx:369: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+
+asyncpg/protocol/protocol.pyx:362: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+
+asyncpg/protocol/coreproto.pyx:1174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+
+asyncpg/protocol/protocol.pyx:956: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_ProactorSocketTransport fd=1128 read=<_OverlappedFuture cancelled>>
+data = <memory at 0x000002137C11E2C0>
+
+    def write(self, data):
+        if not isinstance(data, (bytes, bytearray, memoryview)):
+            raise TypeError(
+                f"data argument must be a bytes-like object, "
+                f"not {type(data).__name__}")
+        if self._eof_written:
+            raise RuntimeError('write_eof() already called')
+        if self._empty_waiter is not None:
+            raise RuntimeError('unable to write; sendfile is in progress')
+    
+        if not data:
+            return
+    
+        if self._conn_lost:
+            if self._conn_lost >= constants.LOG_THRESHOLD_FOR_CONNLOST_WRITES:
+                logger.warning('socket.send() raised exception.')
+            self._conn_lost += 1
+            return
+    
+        # Observable states:
+        # 1. IDLE: _write_fut and _buffer both None
+        # 2. WRITING: _write_fut set; _buffer None
+        # 3. BACKED UP: _write_fut set; _buffer a bytearray
+        # We always copy the data, so the caller can't modify it
+        # while we're still waiting for the I/O to happen.
+        if self._write_fut is None:  # IDLE -> WRITING
+            assert self._buffer is None
+            # Pass a copy, except if it's already immutable.
+>           self._loop_writing(data=bytes(data))
+
+C:\Users\sudip.ranabhat\AppData\Local\Programs\Python\Python313\Lib\asyncio\proactor_events.py:366: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_ProactorSocketTransport fd=1128 read=<_OverlappedFuture cancelled>>
+f = None, data = b'Q\x00\x00\x00\x0bBEGIN;\x00'
+
+    def _loop_writing(self, f=None, data=None):
+        try:
+            if f is not None and self._write_fut is None and self._closing:
+                # XXX most likely self._force_close() has been called, and
+                # it has set self._write_fut to None.
+                return
+            assert f is self._write_fut
+            self._write_fut = None
+            self._pending_write = 0
+            if f:
+                f.result()
+            if data is None:
+                data = self._buffer
+                self._buffer = None
+            if not data:
+                if self._closing:
+                    self._loop.call_soon(self._call_connection_lost, None)
+                if self._eof_written:
+                    self._sock.shutdown(socket.SHUT_WR)
+                # Now that we've reduced the buffer size, tell the
+                # protocol to resume writing if it was paused.  Note that
+                # we do this last since the callback is called immediately
+                # and it may add more data to the buffer (even causing the
+                # protocol to be paused again).
+                self._maybe_resume_protocol()
+            else:
+>               self._write_fut = self._loop._proactor.send(self._sock, data)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+E               AttributeError: 'NoneType' object has no attribute 'send'
+
+C:\Users\sudip.ranabhat\AppData\Local\Programs\Python\Python313\Lib\asyncio\proactor_events.py:402: AttributeError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Projects\Test and Experiemnt\BillingAgentAppTest\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FULL_FAILING_TRACEBACK_END
+
+TOP_5_PROJECT_FRAMES_START
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Projects\Test and Experiemnt\BillingAgentAppTest\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+---
+TOP_5_PROJECT_FRAMES_END
